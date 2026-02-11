@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>محرر HTML بسيط - معالج أخطاء أساسي</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f5f5f5;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.15s;
+    }
+
+    #runBtn {
+      background: #27ae60;
+      color: white;
+    }
+
+    #runBtn:hover {
+      background: #219653;
+    }
+
+    #fixBtn {
+      background: #f39c12;
+      color: white;
+    }
+
+    #fixBtn:hover {
+      background: #e67e22;
+    }
+
+    #clearBtn {
+      background: #7f8c8d;
+      color: white;
+    }
+
+    #clearBtn:hover {
+      background: #95a5a6;
+    }
+
+    .container {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .editor-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      border-left: 1px solid #ddd;
+    }
+
+    .preview-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: white;
+    }
+
+    .section-header {
+      background: #ecf0f1;
+      padding: 8px 16px;
+      font-weight: bold;
+      border-bottom: 1px solid #ddd;
+      font-size: 0.95rem;
+    }
+
+    textarea {
+      flex: 1;
+      width: 100%;
+      border: none;
+      padding: 16px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 15px;
+      resize: none;
+      direction: ltr;
+      background: #fdfdfd;
+    }
+
+    iframe {
+      flex: 1;
+      width: 100%;
+      border: none;
+    }
+
+    #errorPanel {
+      background: #ffebee;
+      color: #c62828;
+      padding: 12px 16px;
+      font-family: monospace;
+      font-size: 14px;
+      max-height: 140px;
+      overflow-y: auto;
+      border-top: 3px solid #e53935;
+      display: none;
+    }
+
+    .info {
+      background: #e3f2fd;
+      color: #1565c0;
+      padding: 10px 16px;
+      margin: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>محرر HTML بسيط مع كاشف أخطاء أساسي</h1>
+    <div class="buttons">
+      <button id="runBtn">تشغيل ←</button>
+      <button id="fixBtn">إصلاح تلقائي</button>
+      <button id="clearBtn">مسح الكل</button>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- منطقة الكود -->
+    <div class="editor-section">
+      <div class="section-header">اكتب أو الصق كود HTML هنا</div>
+      <textarea id="codeEditor" spellcheck="false"><!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>صفحتي الأولى</title>
+</head>
+<body>
+  <h1>مرحباً بالعالم!</h1>
+  <p>هذا نص تجريبي...</p>
+</body>
+</html></textarea>
+    </div>
+
+    <!-- منطقة المعاينة -->
+    <div class="preview-section">
+      <div class="section-header">المعاينة المباشرة</div>
+      <div id="errorPanel"></div>
+      <iframe id="previewFrame"></iframe>
+    </div>
+
+  </div>
+
+  <script>
+    const editor = document.getElementById('codeEditor');
+    const preview = document.getElementById('previewFrame');
+    const errorPanel = document.getElementById('errorPanel');
+
+    // تشغيل الكود
+    function runCode() {
+      const code = editor.value;
+      errorPanel.style.display = 'none';
+      errorPanel.innerHTML = '';
+
+      try {
+        // محاولة كشف بعض الأخطاء الشائعة قبل التشغيل
+        let fixedCode = basicFix(code);
+
+        // إنشاء صفحة كاملة داخل iframe
+        const fullHtml = `
+          <!DOCTYPE html>
+          <html dir="rtl" lang="ar">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>body {font-family: system-ui, sans-serif; padding: 20px;}</style>
+          </head>
+          <body>${fixedCode}</body>
+          </html>`;
+
+        preview.srcdoc = fullHtml;
+
+        // محاولة كشف أخطاء بسيطة بعد التحميل
+        preview.onload = () => {
+          try {
+            const doc = preview.contentDocument || preview.contentWindow.document;
+            if (!doc.body.innerHTML.trim()) {
+              showError("المحتوى فارغ أو غير صحيح");
+            }
+          } catch (e) {
+            showError("حدث خطأ أثناء عرض الصفحة");
+          }
+        };
+
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    // تصحيحات تلقائية بسيطة
+    function basicFix(code) {
+      let fixed = code;
+
+      // إغلاق العناصر الشائعة تلقائياً إذا نسي المستخدم
+      fixed = fixed.replace(/<p>(.+?)(?=<|$)/g, '<p>$1</p>');
+      fixed = fixed.replace(/<h1>(.+?)(?=<|$)/g, '<h1>$1</h1>');
+      fixed = fixed.replace(/<h2>(.+?)(?=<|$)/g, '<h2>$1</h2>');
+      fixed = fixed.replace(/<div>(.+?)(?=<|$)/g, '<div>$1</div>');
+
+      // إضافة doctype إذا لم يكن موجوداً
+      if (!fixed.trim().toLowerCase().startsWith('<!doctype')) {
+        fixed = '<!DOCTYPE html>\n' + fixed;
+      }
+
+      return fixed;
+    }
+
+    function showError(message) {
+      errorPanel.innerHTML = `خطأ: ${message}<br>حاول التحقق من إغلاق العناصر أو كتابة الكود بشكل صحيح.`;
+      errorPanel.style.display = 'block';
+    }
+
+    // الأحداث
+    document.getElementById('runBtn').onclick = runCode;
+    document.getElementById('fixBtn').onclick = () => {
+      editor.value = basicFix(editor.value);
+      runCode();
+    };
+    document.getElementById('clearBtn').onclick = () => {
+      if (confirm('هل أنت متأكد من مسح الكود؟')) {
+        editor.value = '';
+        preview.srcdoc = '<h2 style="text-align:center; color:#999; margin-top:100px;">اكتب كود HTML واضغط تشغيل</h2>';
+        errorPanel.style.display = 'none';
+      }
+    };
+
+    // تشغيل أولي
+    runCode();
+  </script>
+
+</body>
+</html>
